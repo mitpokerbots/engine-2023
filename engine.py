@@ -51,10 +51,13 @@ STATUS = lambda players: ''.join([PVALUE(p.name, p.bankroll) for p in players])
 # Action history is sent once, including the player's actions
 
 
-class RoundState(namedtuple('_RoundState', ['button', 'street', 'pips', 'stacks', 'hands', 'deck', 'previous_state'])):
+class RoundState(namedtuple('_RoundState', ['button', 'street', 'final_street', 'pips', 'stacks', 'hands', 'deck', 'previous_state'])):
     '''
     Encodes the game tree for one round of poker.
     '''
+
+    # Showdown street is no longer guaranteed to be street == 5
+    # Need to include check on final card dealt whether it is a black card (clubs or spades)
 
     def showdown(self):
         '''
@@ -99,10 +102,12 @@ class RoundState(namedtuple('_RoundState', ['button', 'street', 'pips', 'stacks'
         '''
         Resets the players' pips and advances the game tree to the next round of betting.
         '''
-        if self.street == 5:
+        # if self.street == 5:
+        #     return self.showdown()
+        if self.street == self.final_street:
             return self.showdown()
         new_street = 3 if self.street == 0 else self.street + 1
-        return RoundState(1, new_street, [0, 0], self.stacks, self.hands, self.deck, self)
+        return RoundState(1, new_street, self.final_street, [0, 0], self.stacks, self.hands, self.deck, self)
 
     def proceed(self, action):
         '''
@@ -114,27 +119,27 @@ class RoundState(namedtuple('_RoundState', ['button', 'street', 'pips', 'stacks'
             return TerminalState([delta, -delta], self)
         if isinstance(action, CallAction):
             if self.button == 0:  # sb calls bb
-                return RoundState(1, 0, [BIG_BLIND] * 2, [STARTING_STACK - BIG_BLIND] * 2, self.hands, self.deck, self)
+                return RoundState(1, 0, self.final_street, [BIG_BLIND] * 2, [STARTING_STACK - BIG_BLIND] * 2, self.hands, self.deck, self)
             # both players acted
             new_pips = list(self.pips)
             new_stacks = list(self.stacks)
             contribution = new_pips[1-active] - new_pips[active]
             new_stacks[active] -= contribution
             new_pips[active] += contribution
-            state = RoundState(self.button + 1, self.street, new_pips, new_stacks, self.hands, self.deck, self)
+            state = RoundState(self.button + 1, self.street, self.final_street, new_pips, new_stacks, self.hands, self.deck, self)
             return state.proceed_street()
         if isinstance(action, CheckAction):
             if (self.street == 0 and self.button > 0) or self.button > 1:  # both players acted
                 return self.proceed_street()
             # let opponent act
-            return RoundState(self.button + 1, self.street, self.pips, self.stacks, self.hands, self.deck, self)
+            return RoundState(self.button + 1, self.street, self.final_street, self.pips, self.stacks, self.hands, self.deck, self)
         # isinstance(action, RaiseAction)
         new_pips = list(self.pips)
         new_stacks = list(self.stacks)
         contribution = action.amount - new_pips[active]
         new_stacks[active] -= contribution
         new_pips[active] += contribution
-        return RoundState(self.button + 1, self.street, new_pips, new_stacks, self.hands, self.deck, self)
+        return RoundState(self.button + 1, self.street, self.final_street, new_pips, new_stacks, self.hands, self.deck, self)
 
 
 class Player():
@@ -369,12 +374,22 @@ class Game():
         '''
         Runs one round of poker.
         '''
+
+        # RIVER OF BLOOD VARIANT ENTAILS THAT CARDS MAY CONTINUE TO BE DEALT PAST THE RIVER UNTIL A BLACK CARD IS DEALT
+
         deck = eval7.Deck()
         deck.shuffle()
         hands = [deck.deal(2), deck.deal(2)]
+
+        # eval7 card suits are defined as ('c', 'd', 'h', 's')
+        
+        FINAL_STREET = 5 
+        while deck.cards[FINAL_STREET-1].suit == 1 or deck.cards[FINAL_STREET-1].suit == 2:
+            FINAL_STREET += 1
+
         pips = [SMALL_BLIND, BIG_BLIND]
         stacks = [STARTING_STACK - SMALL_BLIND, STARTING_STACK - BIG_BLIND]
-        round_state = RoundState(0, 0, pips, stacks, hands, deck, None)
+        round_state = RoundState(0, 0, FINAL_STREET, pips, stacks, hands, deck, None)
         while not isinstance(round_state, TerminalState):
             self.log_round_state(players, round_state)
             active = round_state.button % 2
