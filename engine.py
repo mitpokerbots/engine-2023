@@ -328,7 +328,7 @@ class Game():
             self.player_messages[1] = ['T0.', 'P1', 'H' + CCARDS(round_state.hands[1])]
         elif round_state.street > 0 and round_state.button == 1:
             board = round_state.deck.peek(round_state.street)
-            self.log.append(STREET_NAMES[round_state.street - 3] + ' ' + PCARDS(board) +
+            self.log.append(STREET_NAMES[round_state.street - 3] if round_state.street < 6 else 'Run' + ' ' + PCARDS(board) +
                             PVALUE(players[0].name, STARTING_STACK-round_state.stacks[0]) +
                             PVALUE(players[1].name, STARTING_STACK-round_state.stacks[1]))
             compressed_board = 'B' + CCARDS(board)
