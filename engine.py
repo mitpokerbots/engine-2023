@@ -63,8 +63,8 @@ class RoundState(namedtuple('_RoundState', ['button', 'street', 'final_street', 
         '''
         Compares the players' hands and computes payoffs.
         '''
-        score0 = eval7.evaluate(self.deck.peek(5) + self.hands[0])
-        score1 = eval7.evaluate(self.deck.peek(5) + self.hands[1])
+        score0 = eval7.evaluate(self.deck.peek(self.final_street) + self.hands[0])
+        score1 = eval7.evaluate(self.deck.peek(self.final_street) + self.hands[1])
         if score0 > score1:
             delta = STARTING_STACK - self.stacks[1]
         elif score0 < score1:
