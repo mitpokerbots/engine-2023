@@ -60,8 +60,8 @@ class RoundState(namedtuple('_RoundState', ['button', 'street', 'pips', 'stacks'
         '''
         Compares the players' hands and computes payoffs.
         '''
-        score0 = eval7.evaluate(self.deck.peek(5) + self.hands[0])
-        score1 = eval7.evaluate(self.deck.peek(5) + self.hands[1])
+        score0 = eval7.evaluate(self.deck[0] + self.hands[0])
+        score1 = eval7.evaluate(self.deck[0] + self.hands[1])
         if score0 > score1:
             delta = STARTING_STACK - self.stacks[1]
         elif score0 < score1:
@@ -99,10 +99,30 @@ class RoundState(namedtuple('_RoundState', ['button', 'street', 'pips', 'stacks'
         '''
         Resets the players' pips and advances the game tree to the next round of betting.
         '''
-        if self.street == 5:
+
+        #-1 for right before showdown also edge case that all cards have been dealt
+        if self.street == -1 or not self.deck[1].cards:
             return self.showdown()
-        new_street = 3 if self.street == 0 else self.street + 1
-        return RoundState(1, new_street, [0, 0], self.stacks, self.hands, self.deck, self)
+        
+        #copy all past info
+        new_hands = self.hands.copy()
+        new_deck = eval7.Deck()
+        new_deck.cards = self.deck[1].cards.copy()
+
+        #proceed street and deal on board
+        if self.street == 0:
+            new_street = 3
+            board = self.deck[0] + new_deck.deal(3)
+        else:
+            last_card = new_deck.deal(1)
+            #During River onwards, if card dealt is club or spade, go to last betting stage
+            if (str(last_card[0])[1] == "c" or str(last_card[0])[1] == "s") and self.street >= 4:
+                new_street = -1
+            else:
+                new_street = self.street + 1
+            board = self.deck[0]+last_card
+        return RoundState(1, new_street, [0, 0], self.stacks, new_hands, (board, new_deck), self)
+
 
     def proceed(self, action):
         '''
@@ -322,8 +342,9 @@ class Game():
             self.player_messages[0] = ['T0.', 'P0', 'H' + CCARDS(round_state.hands[0])]
             self.player_messages[1] = ['T0.', 'P1', 'H' + CCARDS(round_state.hands[1])]
         elif round_state.street > 0 and round_state.button == 1:
-            board = round_state.deck.peek(round_state.street)
-            self.log.append(STREET_NAMES[round_state.street - 3] + ' ' + PCARDS(board) +
+            board = round_state.deck[0]
+            street = STREET_NAMES[2] if round_state.street == -1 or round_state.street > 4 else STREET_NAMES[round_state.street - 3]
+            self.log.append(street + ' ' + PCARDS(board) +
                             PVALUE(players[0].name, STARTING_STACK-round_state.stacks[0]) +
                             PVALUE(players[1].name, STARTING_STACK-round_state.stacks[1]))
             compressed_board = 'B' + CCARDS(board)
@@ -374,7 +395,7 @@ class Game():
         hands = [deck.deal(2), deck.deal(2)]
         pips = [SMALL_BLIND, BIG_BLIND]
         stacks = [STARTING_STACK - SMALL_BLIND, STARTING_STACK - BIG_BLIND]
-        round_state = RoundState(0, 0, pips, stacks, hands, deck, None)
+        round_state = RoundState(0, 0, pips, stacks, hands, ([],deck), None)
         while not isinstance(round_state, TerminalState):
             self.log_round_state(players, round_state)
             active = round_state.button % 2
