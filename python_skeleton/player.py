@@ -58,7 +58,7 @@ class Player(Bot):
         '''
         #my_delta = terminal_state.deltas[active]  # your bankroll change from this round
         #previous_state = terminal_state.previous_state  # RoundState before payoffs
-        #street = previous_state.street  # 0, 3, 4, or 5 representing when this round ended
+        #street = previous_state.street  # int of street representing when this round ended
         #my_cards = previous_state.hands[active]  # your cards
         #opp_cards = previous_state.hands[1-active]  # opponent's cards or [] if not revealed
         pass
@@ -77,7 +77,7 @@ class Player(Bot):
         Your action.
         '''
         legal_actions = round_state.legal_actions()  # the actions you are allowed to take
-        #street = round_state.street  # 0, 3, 4, or 5 representing pre-flop, flop, turn, or river respectively
+        #street = round_state.street  # int representing pre-flop, flop, turn, or river respectively
         #my_cards = round_state.hands[active]  # your cards
         #board_cards = round_state.deck[:street]  # the board cards
         #my_pip = round_state.pips[active]  # the number of chips you have contributed to the pot this round of betting
