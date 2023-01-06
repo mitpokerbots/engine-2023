@@ -84,9 +84,9 @@ public class RoundState extends State {
      * Resets the players' pips and advances the game tree to the next round of betting.
      */
     public State proceedStreet() {
-        if (this.street == 5) {
-            return this.showdown();
-        }
+        // if (this.street == 5) {
+        //     return this.showdown();
+        // }
         int newStreet;
         if (this.street == 0) {
             newStreet = 3;

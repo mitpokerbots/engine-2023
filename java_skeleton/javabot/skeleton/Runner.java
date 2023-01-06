@@ -120,8 +120,9 @@ public class Runner {
                     }
                     case 'B': {
                         String[] cards = leftover.split(",");
-                        List<String> revisedDeck = new ArrayList<String>(Arrays.asList("", "", "", "", ""));
+                        List<String> revisedDeck = new ArrayList<String>();
                         for (int i = 0; i < cards.length; i++) {
+                            revisedDeck.add("");
                             revisedDeck.set(i, cards[i]);
                         }
                         RoundState maker = (RoundState)roundState;
@@ -132,7 +133,7 @@ public class Runner {
                     case 'O': {
                         // backtrack
                         String[] cards = leftover.split(",");
-                        roundState = ((TerminalState)roundState).previousState;
+                        roundState = ((RoundState)roundState).previousState;
                         RoundState maker = (RoundState)roundState;
                         List<List<String>> revisedHands = new ArrayList<List<String>>(maker.hands);
                         revisedHands.set(1 - active, Arrays.asList(cards[0], cards[1]));
