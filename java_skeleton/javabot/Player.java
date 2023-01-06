@@ -51,7 +51,7 @@ public class Player implements Bot {
     public void handleRoundOver(GameState gameState, TerminalState terminalState, int active) {
         //int myDelta = terminalState.deltas.get(active);  // your bankroll change from this round
         //RoundState previousState = (RoundState)(terminalState.previousState);  // RoundState before payoffs
-        //int street = previousState.street;  // 0, 3, 4, or 5 representing when this round ended
+        //int street = previousState.street;  // int of street representing when this round ended
         //List<String> myCards = previousState.hands.get(active);  // your cards
         //List<String> oppCards = previousState.hands.get(1-active);  // opponent's cards or "" if not revealed
     }
@@ -67,7 +67,7 @@ public class Player implements Bot {
      */
     public Action getAction(GameState gameState, RoundState roundState, int active) {
         Set<ActionType> legalActions = roundState.legalActions();  // the actions you are allowed to take
-        //int street = roundState.street;  // 0, 3, 4, or 5 representing pre-flop, flop, turn, or river respectively
+        //int street = roundState.street;  // int representing pre-flop, flop, turn, or river, etc. respectively
         //List<String> myCards = roundState.hands.get(active);  // your cards
         //List<String> boardCards = roundState.deck;  // the board cards
         //int myPip = roundState.pips.get(active);  // the number of chips you have contributed to the pot this round of betting
