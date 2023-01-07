@@ -388,6 +388,9 @@ class Game():
         FINAL_STREET = 5 
         while deck.cards[FINAL_STREET-1].suit == 1 or deck.cards[FINAL_STREET-1].suit == 2:
             FINAL_STREET += 1
+        
+        if FINAL_STREET > 48:
+            FINAL_STREET = 48
 
         pips = [SMALL_BLIND, BIG_BLIND]
         stacks = [STARTING_STACK - SMALL_BLIND, STARTING_STACK - BIG_BLIND]
