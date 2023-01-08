@@ -3,6 +3,7 @@
 #include <iostream>
 #include <memory>
 #include <unordered_set>
+#include <vector>
 
 #include "actions.h"
 #include "constants.h"
@@ -34,11 +35,11 @@ struct RoundState : public State {
   std::array<int, 2> pips;
   std::array<int, 2> stacks;
   std::array<std::array<std::string, 2>, 2> hands;
-  std::array<std::string, 5> deck;
+  std::vector<std::string> deck;
   StatePtr previousState;
 
   RoundState(int button, int street, std::array<int, 2> pips, std::array<int, 2> stacks,
-             std::array<std::array<std::string, 2>, 2> hands, std::array<std::string, 5> deck,
+             std::array<std::array<std::string, 2>, 2> hands, std::vector<std::string> deck,
              StatePtr previousState)
       : button(button), street(street), pips(std::move(pips)), stacks(std::move(stacks)),
         hands(std::move(hands)), deck(std::move(deck)),

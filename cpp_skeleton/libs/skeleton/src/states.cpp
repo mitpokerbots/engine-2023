@@ -43,9 +43,6 @@ std::array<int, 2> RoundState::raiseBounds() const {
 }
 
 StatePtr RoundState::proceedStreet() const {
-  if (street == 5) {
-    return this->showdown();
-  }
   auto newStreet = street == 0 ? 3 : street + 1;
   return std::make_shared<RoundState>(1, newStreet, std::array<int, 2>{0, 0}, stacks, hands, deck, getShared());
 }

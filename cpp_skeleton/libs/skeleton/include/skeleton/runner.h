@@ -51,7 +51,7 @@ public:
     GameInfoPtr gameInfo = std::make_shared<GameInfo>(0, 0.0, 1);
     StatePtr roundState = std::make_shared<RoundState>(
         0, 0, std::array<int, 2>{0, 0}, std::array<int, 2>{0, 0},
-        std::array<std::array<std::string, 2>, 2>{}, std::array<std::string, 5>{},
+        std::array<std::array<std::string, 2>, 2>{}, std::vector<std::string>{},
         nullptr);
     int active = 0;
     bool roundFlag = true;
@@ -75,7 +75,7 @@ public:
             std::array<std::array<std::string, 2>, 2> hands;
             hands[active][0] = cards[0];
             hands[active][1] = cards[1];
-            std::array<std::string, 5> deck;
+            std::vector<std::string> deck;
             std::array<int, 2> pips = {SMALL_BLIND, BIG_BLIND};
             std::array<int, 2> stacks = {
                 STARTING_STACK - SMALL_BLIND,
@@ -110,20 +110,16 @@ public:
           case 'B': {
             std::vector<std::string> cards;
             boost::split(cards, leftover, boost::is_any_of(","));
-            std::array<std::string, 5> revisedDeck;
-            for (auto j = 0; j < cards.size(); ++j) {
-              revisedDeck[j] = cards[j];
-            }
             auto maker = std::static_pointer_cast<const RoundState>(roundState);
             roundState = std::make_shared<RoundState>(maker->button, maker->street, maker->pips, maker->stacks,
-                                                      maker->hands, revisedDeck, maker->previousState);
+                                                      maker->hands, cards, maker->previousState);
             break;
           }
           case 'O': {
             // backtrack
             std::vector<std::string> cards;
             boost::split(cards, leftover, boost::is_any_of(","));
-            roundState = std::static_pointer_cast<const TerminalState>(roundState)->previousState;
+            roundState = std::static_pointer_cast<const RoundState>(roundState)->previousState;
             auto maker = std::static_pointer_cast<const RoundState>(roundState);
             auto revisedHands = maker->hands;
             revisedHands[1 - active] = {cards[0], cards[1]};
