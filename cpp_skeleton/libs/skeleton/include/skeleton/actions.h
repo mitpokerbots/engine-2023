@@ -1,8 +1,14 @@
 #pragma once
 
 #include <iostream>
+#include <string>
 
 #include "constants.h"
+
+#include <fmt/format.h>
+#include <fmt/ostream.h>
+
+
 
 namespace pokerbots::skeleton {
 
@@ -16,5 +22,5 @@ struct Action {
 
   friend std::ostream &operator<<(std::ostream &os, const Action &a);
 };
-
 } // namespace pokerbots::skeleton
+template <> struct fmt::formatter<pokerbots::skeleton::Action> : ostream_formatter {};
