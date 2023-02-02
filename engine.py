@@ -51,7 +51,7 @@ STATUS = lambda players: ''.join([PVALUE(p.name, p.bankroll) for p in players])
 # Action history is sent once, including the player's actions
 
 
-class RoundState(namedtuple('_RoundState', ['button', 'street', 'final_street', 'pips', 'stacks', 'hands', 'deck', 'previous_state'])):
+class RoundState(namedtuple('_RoundState', ['button', 'street', 'final_street', 'pips', 'stacks', 'hands', 'deck', 'reached_run', 'previous_state'])):
     '''
     Encodes the game tree for one round of poker.
     '''
@@ -107,7 +107,13 @@ class RoundState(namedtuple('_RoundState', ['button', 'street', 'final_street', 
         if self.street == self.final_street:
             return self.showdown()
         new_street = 3 if self.street == 0 else self.street + 1
-        return RoundState(1, new_street, self.final_street, [0, 0], self.stacks, self.hands, self.deck, self)
+        if self.street < 5: 
+            reached_run = -1 
+        elif self.street == 5:
+            reached_run = self.stacks[0]
+        else:
+            reached_run = self.reached_run
+        return RoundState(1, new_street, self.final_street, [0, 0], self.stacks, self.hands, self.deck, reached_run, self)
 
     def proceed(self, action):
         '''
@@ -119,27 +125,27 @@ class RoundState(namedtuple('_RoundState', ['button', 'street', 'final_street', 
             return TerminalState([delta, -delta], self)
         if isinstance(action, CallAction):
             if self.button == 0:  # sb calls bb
-                return RoundState(1, 0, self.final_street, [BIG_BLIND] * 2, [STARTING_STACK - BIG_BLIND] * 2, self.hands, self.deck, self)
+                return RoundState(1, 0, self.final_street, [BIG_BLIND] * 2, [STARTING_STACK - BIG_BLIND] * 2, self.hands, self.deck, self.reached_run, self)
             # both players acted
             new_pips = list(self.pips)
             new_stacks = list(self.stacks)
             contribution = new_pips[1-active] - new_pips[active]
             new_stacks[active] -= contribution
             new_pips[active] += contribution
-            state = RoundState(self.button + 1, self.street, self.final_street, new_pips, new_stacks, self.hands, self.deck, self)
+            state = RoundState(self.button + 1, self.street, self.final_street, new_pips, new_stacks, self.hands, self.deck, self.reached_run, self)
             return state.proceed_street()
         if isinstance(action, CheckAction):
             if (self.street == 0 and self.button > 0) or self.button > 1:  # both players acted
                 return self.proceed_street()
             # let opponent act
-            return RoundState(self.button + 1, self.street, self.final_street, self.pips, self.stacks, self.hands, self.deck, self)
+            return RoundState(self.button + 1, self.street, self.final_street, self.pips, self.stacks, self.hands, self.deck, self.reached_run, self)
         # isinstance(action, RaiseAction)
         new_pips = list(self.pips)
         new_stacks = list(self.stacks)
         contribution = action.amount - new_pips[active]
         new_stacks[active] -= contribution
         new_pips[active] += contribution
-        return RoundState(self.button + 1, self.street, self.final_street, new_pips, new_stacks, self.hands, self.deck, self)
+        return RoundState(self.button + 1, self.street, self.final_street, new_pips, new_stacks, self.hands, self.deck, self.reached_run, self)
 
 
 class Player():
@@ -328,7 +334,6 @@ class Game():
             self.player_messages[1] = ['T0.', 'P1', 'H' + CCARDS(round_state.hands[1])]
         elif round_state.street > 0 and round_state.button == 1:
             board = round_state.deck.peek(round_state.street)
-            # print('here')
             street_name = STREET_NAMES[round_state.street - 3] if round_state.street < 6 else 'Run'
             self.log.append(street_name + ' ' + PCARDS(board) +
                             PVALUE(players[0].name, STARTING_STACK-round_state.stacks[0]) +
@@ -371,6 +376,16 @@ class Game():
         self.log.append('{} awarded {}'.format(players[1].name, round_state.deltas[1]))
         self.player_messages[0].append('D' + str(round_state.deltas[0]))
         self.player_messages[1].append('D' + str(round_state.deltas[1]))
+        if previous_state.reached_run > 0: 
+            self.log.append('Run reached')
+            pre_run_contribution = STARTING_STACK - previous_state.reached_run
+            print('pre_run_contribution', pre_run_contribution)
+            if round_state.deltas[0] > round_state.deltas[1]:
+                self.log.append('{} won {}'.format(players[0].name, round_state.deltas[0] - pre_run_contribution))
+                self.log.append('{} won {}'.format(players[1].name, round_state.deltas[1] + pre_run_contribution))
+            else:
+                self.log.append('{} won {}'.format(players[0].name, round_state.deltas[0] + pre_run_contribution))
+                self.log.append('{} won {}'.format(players[1].name, round_state.deltas[1] - pre_run_contribution))
 
     def run_round(self, players):
         '''
@@ -394,7 +409,7 @@ class Game():
 
         pips = [SMALL_BLIND, BIG_BLIND]
         stacks = [STARTING_STACK - SMALL_BLIND, STARTING_STACK - BIG_BLIND]
-        round_state = RoundState(0, 0, FINAL_STREET, pips, stacks, hands, deck, None)
+        round_state = RoundState(0, 0, FINAL_STREET, pips, stacks, hands, deck, -1, None)
         while not isinstance(round_state, TerminalState):
             self.log_round_state(players, round_state)
             active = round_state.button % 2
